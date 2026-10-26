@@ -1,0 +1,18 @@
+{
+	"name": "@frapetti-dev/usage-bar",
+	"version": "0.1.0",
+	"description": "omp extension: below-editor widget showing subscription usage for the session's active models",
+	"author": "frapetti-dev (https://github.com/frapetti-dev)",
+	"type": "module",
+	"license": "MIT",
+	"main": "extensions/usage-bar.ts",
+	"files": ["extensions/usage-bar.ts", "src", "README.md", "LICENSE"],
+	"keywords": ["omp", "omp-extension", "usage", "widget", "subscription"],
+	"repository": { "type": "git", "url": "git+https://github.com/frapetti-dev/usage-bar.git" },
+	"homepage": "https://github.com/frapetti-dev/usage-bar#readme",
+	"bugs": "https://github.com/frapetti-dev/usage-bar/issues",
+	"publishConfig": { "registry": "https://npm.pkg.github.com" },
+	"omp": { "extensions": ["./extensions/usage-bar.ts"] },
+	"scripts": { "typecheck": "tsc --noEmit -p tsconfig.json", "test": "bun test" },
+	"devDependencies": { "@types/node": "^26.3.0", "typescript": "^7.0.2" }
+}

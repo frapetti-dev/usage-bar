@@ -1,0 +1,73 @@
+# Trigger: push of a v* tag (or manual dispatch with tag input).
+# Verifies, publishes @frapetti-dev/usage-bar to GitHub Packages, then creates the GitHub Release.
+
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to publish, e.g. v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: gpr-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate release tag
+        run: |
+          package_version=$(bun -e 'console.log(require("./package.json").version)')
+          if [ "$RELEASE_TAG" != "v${package_version}" ]; then
+            echo "::error::tag ($RELEASE_TAG) != package.json version (v${package_version})"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify (typecheck + tests)
+        run: |
+          bun run typecheck
+          bun test
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@frapetti-dev"
+
+      - name: Validate package contents
+        run: npm pack --dry-run
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes --verify-tag
