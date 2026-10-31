@@ -1,6 +1,6 @@
 {
 	"name": "@frapetti-dev/usage-bar",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "omp extension: below-editor widget showing subscription usage for the session's active models",
 	"author": "frapetti-dev (https://github.com/frapetti-dev)",
 	"type": "module",
