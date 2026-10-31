@@ -20,6 +20,6 @@ export function roleColor(label: string): ThemeColor {
 	return label === "plan" ? "thinkingHigh" : label === "advisor" ? "accent" : label === "verdict" ? "statusLineContext" : label === "verdict-fb" ? "statusLineCost" : "statusLineModel";
 }
 
-export function remainingColor(remaining: number): ThemeColor {
+export function remainingColor(remaining: number): "success" | "warning" | "error" {
 	return remaining >= 0.5 ? "success" : remaining >= 0.2 ? "warning" : "error";
 }

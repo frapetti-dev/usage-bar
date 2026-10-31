@@ -67,8 +67,25 @@ export interface HostTui {
 	requestRender(): void;
 }
 
+/** A described Tern Surface Protocol node (`@oh-my-pi/pi-tui` NativeNode wire shape). */
+export interface HostNativeNode {
+	k: string;
+	p?: Record<string, unknown>;
+	c?: readonly HostNativeNode[];
+	key?: string;
+}
+
+/** The parts of pi-tui's DescribeContext usage-bar reads. */
+export interface HostDescribeContext {
+	readonly cols: number;
+	readonly hour12?: boolean;
+	supports(kind: string): boolean;
+}
+
 export interface HostComponent {
 	render(width: number): readonly string[];
+	/** Return the same node object while nothing changed; null falls back to render(). */
+	describe?(cx: HostDescribeContext): HostNativeNode | null;
 	invalidate?(): void;
 	dispose?(): void;
 }

@@ -63,19 +63,19 @@ function renderBar(theme: HostTheme, g: GlyphSet, remaining: number, barWidth: n
 	return out;
 }
 
-function windowValue(w: WindowView): string {
+export function windowValue(w: WindowView): string {
 	if (w.money) {
 		const lim = Number.isInteger(w.money.limitUsd) ? String(w.money.limitUsd) : w.money.limitUsd.toFixed(2);
 		return `$${w.money.remainingUsd.toFixed(2)}/$${lim}`;
 	}
-	return `${Math.round(w.remaining * 100)}%`.padStart(4);
+	return `${Math.round(w.remaining * 100)}%`;
 }
 
 function renderWindow(w: WindowView, level: Level, now: number, theme: HostTheme, g: GlyphSet): string {
 	const color = remainingColor(w.remaining);
 	let out = theme.fg("muted", w.label) + " ";
 	if (level.barWidth > 0) out += `${renderBar(theme, g, w.remaining, level.barWidth)} `;
-	out += theme.fg(color, windowValue(w));
+	out += theme.fg(color, w.money ? windowValue(w) : windowValue(w).padStart(4));
 	const countdown = level.countdown ? formatCountdown(w.resetsAt, now) : undefined;
 	if (countdown) out += ` ${theme.fg("statusLineSpend", g.reset)} ${theme.fg("dim", countdown)}`;
 	return out;

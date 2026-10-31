@@ -1,7 +1,9 @@
 import { activeModelsKey, advisorEnabled, collectActiveModels, currentRoleLabel, type ActiveModel, type VerdictActiveModels } from "../src/active-models.ts";
-import type { HostComponent, HostCtx, HostIdentity, HostModel, HostPi, HostTheme, HostTui, HostUsageReport } from "../src/host.ts";
+import type { HostComponent, HostCtx, HostDescribeContext, HostIdentity, HostModel, HostNativeNode, HostPi, HostTheme, HostTui, HostUsageReport } from "../src/host.ts";
 import { parseOpenRouterKey, pickAccountReport, selectWindows, SUPPORTED_PROVIDERS, type OpenRouterView, type ProviderId } from "../src/limits.ts";
 import { renderRows, type RowModel } from "../src/render.ts";
+import { glyphsFor } from "../src/glyphs.ts";
+import { describeRows } from "../src/native.ts";
 import { asRecord } from "../src/util.ts";
 
 const WIDGET_KEY = "usage-bar";
@@ -49,6 +51,11 @@ export default function usageBar(pi: HostPi): void {
 	let cacheVersion = -1;
 	let cacheMinute = -1;
 	let cacheLines: readonly string[] = [];
+	let nativeVersion = -1;
+	let nativeMinute = -1;
+	let nativeMeter = false;
+	let nativeHour12: boolean | undefined;
+	let nativeNode: HostNativeNode | null = null;
 
 	const minuteNow = (): number => Math.floor(Date.now() / 60_000);
 	const warn = (message: string, e: unknown): void => pi.logger?.warn?.(message, { error: String(e) });
@@ -87,8 +94,20 @@ export default function usageBar(pi: HostPi): void {
 				cacheLines = renderRows(buildRows(), width, Date.now(), theme);
 				return cacheLines;
 			},
+			describe(cx: HostDescribeContext): HostNativeNode | null {
+				const minute = minuteNow();
+				const meter = cx.supports("meter");
+				if (version === nativeVersion && minute === nativeMinute && meter === nativeMeter && cx.hour12 === nativeHour12) return nativeNode;
+				nativeVersion = version;
+				nativeMinute = minute;
+				nativeMeter = meter;
+				nativeHour12 = cx.hour12;
+				nativeNode = describeRows(buildRows(), Date.now(), glyphsFor(theme), { meter, hour12: cx.hour12 });
+				return nativeNode;
+			},
 			invalidate(): void {
 				cacheWidth = -1;
+				nativeVersion = -1;
 			},
 			dispose(): void {
 				if (liveTui === tui) liveTui = undefined;
@@ -227,6 +246,11 @@ export default function usageBar(pi: HostPi): void {
 		cacheVersion = -1;
 		cacheMinute = -1;
 		cacheLines = [];
+		nativeVersion = -1;
+		nativeMinute = -1;
+		nativeMeter = false;
+		nativeHour12 = undefined;
+		nativeNode = null;
 	}
 
 	function init(ctx: HostCtx): void {

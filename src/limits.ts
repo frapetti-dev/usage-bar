@@ -47,7 +47,7 @@ export function pickAccountReport(reports: HostUsageReport[], provider: string, 
 	return mine.find((r) => r.limits.length > 0);
 }
 
-const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
+export const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
 
 export function usedFraction(limit: HostUsageLimit): number | undefined {
 	const a = limit.amount;
