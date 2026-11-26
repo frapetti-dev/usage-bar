@@ -1,4 +1,6 @@
-/** Structural types for the omp host surface usage-bar touches (no omp dependency). */
+/** Structural types for the omp host surface usage-bar touches. */
+import type { ExtensionRender, ExtensionTheme, ExtensionUiHost } from "@oh-my-pi/pi-coding-agent";
+
 
 export interface HostModel {
 	provider: string;
@@ -59,35 +61,8 @@ export type ThemeColor =
 export interface HostTheme {
 	fg(color: ThemeColor, text: string): string;
 	bold(text: string): string;
-	getSymbolPreset?(): string;
-	getColorMode?(): string;
-}
-
-export interface HostTui {
-	requestRender(): void;
-}
-
-/** A described Tern Surface Protocol node (`@oh-my-pi/pi-tui` NativeNode wire shape). */
-export interface HostNativeNode {
-	k: string;
-	p?: Record<string, unknown>;
-	c?: readonly HostNativeNode[];
-	key?: string;
-}
-
-/** The parts of pi-tui's DescribeContext usage-bar reads. */
-export interface HostDescribeContext {
-	readonly cols: number;
-	readonly hour12?: boolean;
-	supports(kind: string): boolean;
-}
-
-export interface HostComponent {
-	render(width: number): readonly string[];
-	/** Return the same node object while nothing changed; null falls back to render(). */
-	describe?(cx: HostDescribeContext): HostNativeNode | null;
-	invalidate?(): void;
-	dispose?(): void;
+	readonly symbols?: { readonly preset: string };
+	readonly depth?: string;
 }
 
 export interface HostSessionEntry {
@@ -103,7 +78,7 @@ export interface HostCtx {
 	ui: {
 		setWidget(
 			key: string,
-			content: ((tui: HostTui, theme: HostTheme) => HostComponent) | undefined,
+			content: ((ui: ExtensionUiHost, theme: ExtensionTheme) => ExtensionRender) | undefined,
 			options?: { placement?: "aboveEditor" | "belowEditor" },
 		): void;
 	};

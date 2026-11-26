@@ -12,7 +12,7 @@ const cp = (s: string): number => [...strip(s)].length;
 
 const tagged = (extra: Partial<HostTheme> = {}): HostTheme => ({ fg: (c, t) => `<${c}>${t}</${c}>`, bold: (t) => t, ...extra });
 const bare = (extra: Partial<HostTheme> = {}): HostTheme => ({ fg: (_c, t) => t, bold: (t) => t, ...extra });
-const nerd = { getSymbolPreset: () => "nerd" };
+const nerd = { symbols: { preset: "nerd" } };
 
 const row = (over: Partial<RowModel> = {}): RowModel => ({
 	provider: "anthropic",
@@ -84,12 +84,12 @@ describe("renderRows nerd preset", () => {
 
 describe("colors", () => {
 	test("truecolor brand SGR, closed", () => {
-		const [line] = renderRows([row()], WIDE, NOW, tagged({ getColorMode: () => "truecolor" }));
+		const [line] = renderRows([row()], WIDE, NOW, tagged({ depth: "truecolor" }));
 		expect(line!.startsWith("\x1b[38;2;217;119;87m")).toBe(true);
 		expect(line).toContain("\x1b[39m");
 	});
-	test("256-color fallback for 256color and for a missing method", () => {
-		expect(renderRows([row()], WIDE, NOW, tagged({ getColorMode: () => "256color" }))[0]!.startsWith("\x1b[38;5;173m")).toBe(true);
+	test("256-color fallback for 256 and for a missing depth", () => {
+		expect(renderRows([row()], WIDE, NOW, tagged({ depth: "256" }))[0]!.startsWith("\x1b[38;5;173m")).toBe(true);
 		expect(renderRows([row()], WIDE, NOW, tagged())[0]!.startsWith("\x1b[38;5;173m")).toBe(true);
 	});
 	test("role colors", () => {
@@ -122,7 +122,7 @@ describe("width degradation", () => {
 });
 
 describe("glyphsFor", () => {
-	test("throwing preset getter falls back to PLAIN", () => {
-		expect(glyphsFor({ getSymbolPreset: () => { throw new Error("x"); } })).toBe(PLAIN);
+	test("no symbols falls back to PLAIN", () => {
+		expect(glyphsFor({})).toBe(PLAIN);
 	});
 });
