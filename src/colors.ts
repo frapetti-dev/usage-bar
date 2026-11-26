@@ -8,10 +8,7 @@ const BRAND: Record<"anthropic" | "openai-codex" | "openrouter", { tc: string; c
 
 /** Provider brand color as raw SGR (theme.fg only takes theme keys); truecolor only when the theme says so. */
 export function brand(theme: HostTheme, provider: keyof typeof BRAND, text: string): string {
-	let truecolor = false;
-	try {
-		truecolor = theme.getColorMode?.() === "truecolor";
-	} catch {}
+	const truecolor = theme.depth === "truecolor";
 	const b = BRAND[provider];
 	return `${truecolor ? b.tc : b.c256}${text}\x1b[39m`;
 }

@@ -1,5 +1,7 @@
 import { activeModelsKey, advisorEnabled, collectActiveModels, currentRoleLabel, type ActiveModel, type VerdictActiveModels } from "../src/active-models.ts";
-import type { HostComponent, HostCtx, HostDescribeContext, HostIdentity, HostModel, HostNativeNode, HostPi, HostTheme, HostTui, HostUsageReport } from "../src/host.ts";
+import type { ExtensionRender, ExtensionTheme, ExtensionUiHost } from "@oh-my-pi/pi-coding-agent";
+import { jsx, signal } from "@oh-my-pi/pi-tui";
+import type { HostCtx, HostIdentity, HostModel, HostPi, HostUsageReport } from "../src/host.ts";
 import { parseOpenRouterKey, pickAccountReport, selectWindows, SUPPORTED_PROVIDERS, type OpenRouterView, type ProviderId } from "../src/limits.ts";
 import { renderRows, type RowModel } from "../src/render.ts";
 import { glyphsFor } from "../src/glyphs.ts";
@@ -27,7 +29,6 @@ function readVerdictProbe(ctx: HostCtx): VerdictActiveModels | undefined {
 
 export default function usageBar(pi: HostPi): void {
 	let liveCtx: HostCtx | undefined;
-	let liveTui: HostTui | undefined;
 	let timer: unknown;
 
 	let activeModels: ActiveModel[] = [];
@@ -47,15 +48,7 @@ export default function usageBar(pi: HostPi): void {
 	let version = 0;
 	let requestedVersion = -1;
 	let requestedMinute = -1;
-	let cacheWidth = -1;
-	let cacheVersion = -1;
-	let cacheMinute = -1;
-	let cacheLines: readonly string[] = [];
-	let nativeVersion = -1;
-	let nativeMinute = -1;
-	let nativeMeter = false;
-	let nativeHour12: boolean | undefined;
-	let nativeNode: HostNativeNode | null = null;
+	const redraw = signal(0);
 
 	const minuteNow = (): number => Math.floor(Date.now() / 60_000);
 	const warn = (message: string, e: unknown): void => pi.logger?.warn?.(message, { error: String(e) });
@@ -82,43 +75,24 @@ export default function usageBar(pi: HostPi): void {
 		return rows;
 	}
 
-	function component(tui: HostTui, theme: HostTheme): HostComponent {
-		liveTui = tui;
-		return {
-			render(width: number): readonly string[] {
-				const minute = minuteNow();
-				if (width === cacheWidth && version === cacheVersion && minute === cacheMinute) return cacheLines;
-				cacheWidth = width;
-				cacheVersion = version;
-				cacheMinute = minute;
-				cacheLines = renderRows(buildRows(), width, Date.now(), theme);
-				return cacheLines;
+	function component(ui: ExtensionUiHost, theme: ExtensionTheme): ExtensionRender {
+		return jsx("col", {
+			children: () => {
+				redraw();
+				const now = Date.now();
+				const rows = buildRows();
+				return (
+					describeRows(rows, now, glyphsFor(theme), { meter: true }) ??
+					jsx("col", { children: renderRows(rows, ui.size().columns, now, theme).map((text) => jsx("text", { text })) })
+				);
 			},
-			describe(cx: HostDescribeContext): HostNativeNode | null {
-				const minute = minuteNow();
-				const meter = cx.supports("meter");
-				if (version === nativeVersion && minute === nativeMinute && meter === nativeMeter && cx.hour12 === nativeHour12) return nativeNode;
-				nativeVersion = version;
-				nativeMinute = minute;
-				nativeMeter = meter;
-				nativeHour12 = cx.hour12;
-				nativeNode = describeRows(buildRows(), Date.now(), glyphsFor(theme), { meter, hour12: cx.hour12 });
-				return nativeNode;
-			},
-			invalidate(): void {
-				cacheWidth = -1;
-				nativeVersion = -1;
-			},
-			dispose(): void {
-				if (liveTui === tui) liveTui = undefined;
-			},
-		};
+		});
 	}
 
 	function requestRender(): void {
 		requestedVersion = version;
 		requestedMinute = minuteNow();
-		liveTui?.requestRender();
+		redraw.update((v) => v + 1);
 	}
 
 	async function fetchOpenRouter(ctx: HostCtx, models: HostModel[]): Promise<void> {
@@ -226,7 +200,6 @@ export default function usageBar(pi: HostPi): void {
 
 	function reset(): void {
 		liveCtx = undefined;
-		liveTui = undefined;
 		timer = undefined;
 		activeModels = [];
 		lastKey = undefined;
@@ -242,15 +215,6 @@ export default function usageBar(pi: HostPi): void {
 		version = 0;
 		requestedVersion = -1;
 		requestedMinute = -1;
-		cacheWidth = -1;
-		cacheVersion = -1;
-		cacheMinute = -1;
-		cacheLines = [];
-		nativeVersion = -1;
-		nativeMinute = -1;
-		nativeMeter = false;
-		nativeHour12 = undefined;
-		nativeNode = null;
 	}
 
 	function init(ctx: HostCtx): void {
@@ -258,7 +222,7 @@ export default function usageBar(pi: HostPi): void {
 		if (timer !== undefined) ctx.clearTimer(timer);
 		reset();
 		liveCtx = ctx;
-		ctx.ui.setWidget(WIDGET_KEY, (tui, theme) => component(tui, theme), { placement: "belowEditor" });
+		ctx.ui.setWidget(WIDGET_KEY, component, { placement: "belowEditor" });
 		timer = ctx.setInterval(tick, TICK_MS);
 		tick();
 	}

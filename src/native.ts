@@ -1,12 +1,12 @@
+import { jsx, type JSXNode } from "@oh-my-pi/pi-tui";
 import { remainingColor, roleColor } from "./colors.ts";
 import type { GlyphSet } from "./glyphs.ts";
-import type { HostNativeNode } from "./host.ts";
 import { clamp01, PROVIDER_NAMES, type WindowView } from "./limits.ts";
 import { formatCountdown, windowValue, type RowModel } from "./render.ts";
 
 type Span = { t: string; s: string };
 
-const n = (k: string, p?: Record<string, unknown>, c?: readonly HostNativeNode[], key?: string): HostNativeNode => ({ k, p, c, key });
+const n = (k: string, p?: Record<string, unknown>, c?: readonly JSXNode[], key?: string): JSXNode => jsx(k, c ? { ...p, children: c } : { ...p }, key);
 const cps = (s: string): number => [...s].length;
 
 function windowTitle(w: WindowView, now: number, hour12: boolean | undefined): string {
@@ -25,10 +25,10 @@ function windowTitle(w: WindowView, now: number, hour12: boolean | undefined): s
 	return title;
 }
 
-function windowNode(w: WindowView, i: number, now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): HostNativeNode {
+function windowNode(w: WindowView, i: number, now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): JSXNode {
 	const tone = remainingColor(w.remaining);
 	const sizing = { grow: 1, shrink: 1, min: { w: "4ch" }, max: { w: "10ch" } };
-	const cells: HostNativeNode[] = [n("text", { role: "omp.usage.label", spans: [{ t: w.label, s: "muted" }], wrap: "none", shrink: 0 })];
+	const cells: JSXNode[] = [n("text", { role: "omp.usage.label", spans: [{ t: w.label, s: "muted" }], wrap: "none", shrink: 0 })];
 	cells.push(
 		opts.meter
 			? n("meter", { value: clamp01(w.remaining), style: "bar", size: "sm", tone, ...sizing })
@@ -42,8 +42,8 @@ function windowNode(w: WindowView, i: number, now: number, g: GlyphSet, opts: { 
 	return n("row", { gap: "sm", align: "center", shrink: 0, title: windowTitle(w, now, opts.hour12) }, cells, `w${i}`);
 }
 
-function tailNode(row: RowModel, now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): HostNativeNode {
-	const text = (spans: Span[]): HostNativeNode => n("text", { role: "omp.usage.amount", spans, wrap: "none", truncate: "end" }, undefined, "tail");
+function tailNode(row: RowModel, now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): JSXNode {
+	const text = (spans: Span[]): JSXNode => n("text", { role: "omp.usage.amount", spans, wrap: "none", truncate: "end" }, undefined, "tail");
 	if (row.note !== undefined) {
 		const spans: Span[] = [];
 		if (row.note === "usage unavailable" && g.warn) spans.push({ t: `${g.warn} `, s: "warning" });
@@ -56,8 +56,8 @@ function tailNode(row: RowModel, now: number, g: GlyphSet, opts: { meter: boolea
 	return n("row", { gap: "lg", align: "center", shrink: 1, min: { w: 0 } }, row.windows.map((w, i) => windowNode(w, i, now, g, opts)), "tail");
 }
 
-/** Describe provider rows as a Tern Surface Protocol tree; null (no rows) falls back to the ANSI render path. */
-export function describeRows(rows: RowModel[], now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): HostNativeNode | null {
+/** Describe provider rows as pi-tui nodes; null (no rows) means the caller draws the plain-rows fallback. */
+export function describeRows(rows: RowModel[], now: number, g: GlyphSet, opts: { meter: boolean; hour12?: boolean }): JSXNode | null {
 	if (rows.length === 0) return null;
 	const names = rows.map((r) => (g.provider[r.provider] ? `${g.provider[r.provider]} ${PROVIDER_NAMES[r.provider]}` : PROVIDER_NAMES[r.provider]));
 	const roleSpans = rows.map((r) => {

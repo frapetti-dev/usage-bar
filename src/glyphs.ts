@@ -27,10 +27,6 @@ export const PLAIN: GlyphSet = {
 	bar: { fullLeft: "█", fullMid: "█", fullRight: "█", emptyLeft: "░", emptyMid: "░", emptyRight: "░" },
 };
 
-export function glyphsFor(theme: { getSymbolPreset?(): string }): GlyphSet {
-	try {
-		return theme.getSymbolPreset?.() === "nerd" ? NERD : PLAIN;
-	} catch {
-		return PLAIN;
-	}
+export function glyphsFor(theme: { symbols?: { preset: string } }): GlyphSet {
+	return theme.symbols?.preset === "nerd" ? NERD : PLAIN;
 }
